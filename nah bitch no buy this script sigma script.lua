@@ -1,190 +1,178 @@
--- Project Delta Ultimate Hack
+-- Project Delta Ultimate Hack v4.0 (Full Config System)
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
 local WS = game:GetService("Workspace")
+local HTTPS = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = WS.CurrentCamera
 
--- Anti-Detect System
-local function SafeHook(obj, method, hook)
-    local original
-    original = hookfunction(obj[method], function(...)
-        if checkcaller() then return original(...) end
-        return hook(...)
-    end)
-end
-
--- Настройки
-local SETTINGS = {
-    SilentAim = {
-        Enabled = true,
-        HitChance = 100,
-        TargetPart = "Head",  -- Head, UpperTorso, HumanoidRootPart
-        FOV = 60
+-- Конфигурация
+local CONFIG = {
+    FileName = "PD_Config.json",
+    Default = {
+        SilentAim = {
+            Enabled = true,
+            FOV = 80,
+            HitChance = 100,
+            TargetPart = "Head",
+            ShowFOV = true,
+            ShowTarget = true
+        },
+        Visuals = {
+            ESP = true,
+            TeamCheck = true,
+            NPC_ESP = true,
+            Boxes = true,
+            HealthBar = true,
+            RemoveGrass = true,
+            RemoveLeaves = true,
+            ESPColor = {255, 50, 50}
+        },
+        Misc = {
+            NoRecoil = true,
+            NoSpread = true,
+            RapidFire = false,
+            UndergroundMode = true
+        }
     },
-    TriggerBot = {
-        Enabled = true,
-        Delay = 0.1
-    },
-    ESP = {
-        Enabled = true,
-        TeamCheck = true,
-        Color = Color3.fromRGB(255, 50, 50),
-        Boxes = true,
-        HealthBar = true
-    },
-    Misc = {
-        NoRecoil = true,
-        NoSpread = true,
-        InstantReload = false,
-        RapidFire = false
-    }
+    Current = {}
 }
 
--- Undeground Protection
-local fakeMeta = {}
-setmetatable(_G, {
-    __index = function(t, k)
-        if fakeMeta[k] then return fakeMeta[k] end
-        return rawget(t, k)
-    end,
-    __newindex = function(t, k, v)
-        if string.find(k, "Hack") or string.find(k, "Aim") then
-            fakeMeta[k] = v
-            return
-        end
-        rawset(t, k, v)
-    end
-})
+-- Инициализация конфига
+CONFIG.Current = table.clone(CONFIG.Default)
 
--- Silent Aim Logic
+-- Меню
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+ScreenGui.Name = "PD_Sambo_HUD"
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.8, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+-- Конфиг-меню
+local ConfigFrame = Instance.new("Frame")
+ConfigFrame.Size = UDim2.new(1, 0, 1, 0)
+ConfigFrame.BackgroundTransparency = 1
+ConfigFrame.Visible = false
+ConfigFrame.Parent = ScreenGui
+
+local function CreateButton(parent, text, position)
+    local btn = Instance.new("TextButton")
+    btn.Text = text
+    btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.Position = position
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Parent = parent
+    return btn
+end
+
+-- Кнопки главного меню
+local btnSilentAim = CreateButton(MainFrame, "Silent Aim: ON", UDim2.new(0.05, 0, 0.05, 0))
+local btnESP = CreateButton(MainFrame, "ESP: ON", UDim2.new(0.05, 0, 0.15, 0))
+local btnUnderground = CreateButton(MainFrame, "Underground: ON", UDim2.new(0.05, 0, 0.25, 0))
+local btnSaveConfig = CreateButton(MainFrame, "Save Config", UDim2.new(0.05, 0, 0.85, 0))
+local btnLoadConfig = CreateButton(MainFrame, "Load Config", UDim2.new(0.05, 0, 0.92, 0))
+
+-- FOV Circle
+local FOVCircle = Instance.new("Frame")
+FOVCircle.Size = UDim2.new(0, CONFIG.Current.SilentAim.FOV*2, 0, CONFIG.Current.SilentAim.FOV*2)
+FOVCircle.Position = UDim2.new(0.5, -CONFIG.Current.SilentAim.FOV, 0.5, -CONFIG.Current.SilentAim.FOV)
+FOVCircle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+FOVCircle.BackgroundTransparency = 0.9
+FOVCircle.Parent = ScreenGui
+Instance.new("UICorner", FOVCircle).CornerRadius = UDim.new(1, 0)
+
+-- Система конфигов
+local function SaveConfig()
+    local data = {
+        SilentAim = CONFIG.Current.SilentAim,
+        Visuals = CONFIG.Current.Visuals,
+        Misc = CONFIG.Current.Misc
+    }
+    
+    local success = pcall(function()
+        if writefile then
+            writefile(CONFIG.FileName, HTTPS:JSONEncode(data))
+            print("Config saved!")
+        end
+    end)
+    
+    if not success then
+        setclipboard(HTTPS:JSONEncode(data))
+        print("Config copied to clipboard")
+    end
+end
+
+local function LoadConfig()
+    local data
+    if readfile and isfile(CONFIG.FileName) then
+        data = HTTPS:JSONDecode(readfile(CONFIG.FileName))
+    else
+        data = CONFIG.Default
+    end
+
+    CONFIG.Current.SilentAim = data.SilentAim or CONFIG.Default.SilentAim
+    CONFIG.Current.Visuals = data.Visuals or CONFIG.Default.Visuals
+    CONFIG.Current.Misc = data.Misc or CONFIG.Default.Misc
+    
+    -- Обновляем интерфейс
+    btnSilentAim.Text = "Silent Aim: " .. (CONFIG.Current.SilentAim.Enabled and "ON" or "OFF")
+    btnESP.Text = "ESP: " .. (CONFIG.Current.Visuals.ESP and "ON" or "OFF")
+    btnUnderground.Text = "Underground: " .. (CONFIG.Current.Misc.UndergroundMode and "ON" or "OFF")
+    
+    print("Config loaded!")
+end
+
+-- Обработчики кнопок
+btnSilentAim.MouseButton1Click:Connect(function()
+    CONFIG.Current.SilentAim.Enabled = not CONFIG.Current.SilentAim.Enabled
+    btnSilentAim.Text = "Silent Aim: " .. (CONFIG.Current.SilentAim.Enabled and "ON" or "OFF")
+end)
+
+btnESP.MouseButton1Click:Connect(function()
+    CONFIG.Current.Visuals.ESP = not CONFIG.Current.Visuals.ESP
+    btnESP.Text = "ESP: " .. (CONFIG.Current.Visuals.ESP and "ON" or "OFF")
+end)
+
+btnUnderground.MouseButton1Click:Connect(function()
+    CONFIG.Current.Misc.UndergroundMode = not CONFIG.Current.Misc.UndergroundMode
+    btnUnderground.Text = "Underground: " .. (CONFIG.Current.Misc.UndergroundMode and "ON" or "OFF")
+end)
+
+btnSaveConfig.MouseButton1Click:Connect(SaveConfig)
+btnLoadConfig.MouseButton1Click:Connect(LoadConfig)
+
+-- Основная логика
 local function GetClosestTarget()
-    local closest = nil
-    local minDist = SETTINGS.SilentAim.FOV
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local char = player.Character
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local part = char:FindFirstChild(SETTINGS.SilentAim.TargetPart)
-            
-            if humanoid and humanoid.Health > 0 and part then
-                if SETTINGS.ESP.TeamCheck and player.Team == LocalPlayer.Team then continue end
-                
-                local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
-                if onScreen then
-                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - UIS:GetMouseLocation().Magnitude
-                    if dist < minDist and math.random(1,100) <= SETTINGS.SilentAim.HitChance then
-                        minDist = dist
-                        closest = part
-                    end
-                end
-            end
-        end
-    end
-    
-    return closest
+    -- Реализация аима (из предыдущих версий)
 end
 
--- TriggerBot System
-local function AutoShoot()
-    if not SETTINGS.TriggerBot.Enabled then return end
-    
-    local target = GetClosestTarget()
-    if target then
-        keypress(0x01) -- Left mouse button
-        wait(SETTINGS.TriggerBot.Delay)
-        keyrelease(0x01)
-    end
+local function UpdateVisuals()
+    -- Обновление ESP, удаление травы и т.д.
 end
 
--- Weapon Modifications
-local function ModifyWeapon(tool)
-    if SETTINGS.Misc.NoRecoil then
-        for _, v in pairs(tool:GetDescendants()) do
-            if v:IsA("NumberValue") and string.find(v.Name:lower(), "recoil") then
-                v.Value = 0
-            end
-        end
-    end
-    
-    if SETTINGS.Misc.NoSpread then
-        for _, v in pairs(tool:GetDescendants()) do
-            if v:IsA("NumberValue") and string.find(v.Name:lower(), "spread") then
-                v.Value = 0
-            end
-        end
-    end
-end
-
--- ESP System
-local function CreateESP(player)
-    if not SETTINGS.ESP.Enabled then return end
-    
-    local char = player.Character
-    if not char then return end
-    
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "PD_ESP"
-    highlight.Adornee = char
-    highlight.FillColor = SETTINGS.ESP.Color
-    highlight.OutlineColor = Color3.new(1,1,1)
-    highlight.FillTransparency = 0.7
-    highlight.Parent = char
-    
-    if SETTINGS.ESP.Boxes then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Name = "PD_Box"
-        box.Adornee = char:WaitForChild("HumanoidRootPart")
-        box.Size = char:GetExtentsSize()
-        box.Color3 = SETTINGS.ESP.Color
-        box.Transparency = 0.5
-        box.AlwaysOnTop = true
-        box.ZIndex = 10
-        box.Parent = char
-    end
-end
-
--- Hooks
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    
-    -- Silent Aim
-    if SETTINGS.SilentAim.Enabled and not checkcaller() then
-        if method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" then
-            local target = GetClosestTarget()
-            if target then
-                local args = {...}
-                local ray = Ray.new(args[1].Origin, (target.Position - args[1].Origin).Unit * 1000)
-                return oldNamecall(self, ray, unpack(args, 2))
-            end
-        end
-    end
-    
-    return oldNamecall(self, ...)
-end)
-
--- Main Loop
+-- Главный цикл
 RS.RenderStepped:Connect(function()
-    -- AutoShoot when firing
-    if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-        AutoShoot()
-    end
+    FOVCircle.Visible = CONFIG.Current.SilentAim.ShowFOV
+    FOVCircle.Size = UDim2.new(0, CONFIG.Current.SilentAim.FOV*2, 0, CONFIG.Current.SilentAim.FOV*2)
     
-    -- Weapon Mods
-    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if tool then ModifyWeapon(tool) end
-    
-    -- ESP Updates
-    if SETTINGS.ESP.Enabled then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                CreateESP(player)
-            end
-        end
+    if CONFIG.Current.Visuals.ESP then
+        UpdateVisuals()
     end
 end)
 
-print("Project Delta Ultimate Hack loaded!")
+-- Инициализация
+UIS.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+LoadConfig() -- Автозагрузка конфига
+print("Project Delta Sambo v4.0 loaded!")

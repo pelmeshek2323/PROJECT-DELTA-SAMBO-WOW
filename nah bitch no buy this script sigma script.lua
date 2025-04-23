@@ -141,4 +141,4 @@ if success then
     end)
 end
 
-print("Project Delta Swift Edition успешно запущен!")
+print("lol bro press rightshift")

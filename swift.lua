@@ -1,36 +1,8 @@
-print("Скрипт запущен! Шаг 1/5")
-local function CreateMovableMenu()
-    print("Создание интерфейса... Шаг 2/5")
-    -- ... остальной код ...
-    print("Интерфейс создан!")
-    return ScreenGui
-end
-UIS.InputBegan:Connect(function(input)
-    print("Нажата клавиша:", input.KeyCode)
-    if input.KeyCode == SETTINGS.MenuKey then
-        GUI.Main.Visible = not GUI.Main.Visible
-        print("Меню видимости:", GUI.Main.Visible)
-    end
-end)
-local function TestFeatures()
-    print("Тест функций...")
-    -- ESP
-    UpdateESP()
-    print("ESP:", #ESPCache > 0 and "Работает" or "Не работает")
-    
-    -- Аимбот
-    SmartAimbot()
-    print("Аимбот:", SETTINGS.Features.Aimbot.Enabled and "Активен" or "Выключен")
-    
-    -- Характеристики
-    if LP.Character then
-        local humanoid = LP.Character:FindFirstChildOfClass("Humanoid")
-        print("Скорость:", humanoid.WalkSpeed)
-    end
-end
+--[[
+  GitHub Loader: https://github.com/pelmeshek2323/PROJECT-DELTA-SAMBO-WOW/edit/main/swift.lua
+  Нажмите INSERT для меню | Автор: pelmeshek
+]]
 
-RS.Heartbeat:Connect(TestFeatures)
--- Project Delta Ultimate Hack v6.2 (DEBUG)
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
@@ -38,69 +10,108 @@ local WS = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 local Camera = WS.CurrentCamera
 
-print("Инициализация... Шаг 1/5")
-
 -- Конфигурация
-local SETTINGS = {
-    MenuKey = Enum.KeyCode.RightShift,
-    ThemeColor = Color3.fromRGB(0, 170, 255),
-    Features = {
-        Aimbot = {Enabled = false},
-        ESP = {Players = true},
-        Player = {Speed = 24},
-        World = {Fullbright = true}
-    }
+local CONFIG = {
+    MenuKey = Enum.KeyCode.Insert,
+    GitHubURL = "https://raw.githubusercontent.com/.../config.json",
+    ThemeColor = Color3.fromRGB(85, 170, 255)
 }
 
--- Глобальные переменные
-local GUI = {Main = nil}
-local ESPCache = {}
+-- Загрузка настроек
+local function LoadConfig()
+    local success, data = pcall(function()
+        return game:HttpGet(CONFIG.GitHubURL)
+    end)
+    return success and game:GetService("HttpService"):JSONDecode(data) or {}
+end
 
-print("Создание меню... Шаг 2/5")
-local function CreateMovableMenu()
+local SETTINGS = LoadConfig()
+
+-- Меню
+local GUI = {
+    Main = nil,
+    Tabs = {"Combat", "Visuals", "Player", "World"},
+    Elements = {}
+}
+
+local function CreateUI()
     local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "DeltaHub_"..tostring(math.random(1000,9999))
     ScreenGui.Parent = game:GetService("CoreGui")
-    
+
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 300, 0, 200)
-    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    MainFrame.Size = UDim2.new(0, 400, 0, 500)
+    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
     MainFrame.Visible = false
     MainFrame.Parent = ScreenGui
 
-    local Button = Instance.new("TextButton")
-    Button.Text = "Тестовая кнопка"
-    Button.Size = UDim2.new(0.9, 0, 0, 40)
-    Button.Position = UDim2.new(0.05, 0, 0.1, 0)
-    Button.Parent = MainFrame
+    -- Заголовок с возможностью перемещения
+    local TitleBar = Instance.new("TextLabel")
+    TitleBar.Text = "PROJECT DELTA HUB v7.0"
+    TitleBar.Size = UDim2.new(1, 0, 0, 30)
+    TitleBar.BackgroundColor3 = CONFIG.ThemeColor
+    TitleBar.TextColor3 = Color3.new(1, 1, 1)
+    TitleBar.Font = Enum.Font.GothamBold
+    TitleBar.Parent = MainFrame
+
+    -- Система вкладок
+    for i, tabName in ipairs(GUI.Tabs) do
+        local TabButton = Instance.new("TextButton")
+        TabButton.Text = tabName
+        TabButton.Size = UDim2.new(0.24, 0, 0, 30)
+        TabButton.Position = UDim2.new(0.01 + (i-1)*0.25, 0, 0.08, 0)
+        TabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        TabButton.TextColor3 = Color3.new(1, 1, 1)
+        TabButton.Parent = MainFrame
+
+        local TabFrame = Instance.new("ScrollingFrame")
+        TabFrame.Size = UDim2.new(1, -10, 0.8, 0)
+        TabFrame.Position = UDim2.new(0, 5, 0.15, 35)
+        TabFrame.BackgroundTransparency = 1
+        TabFrame.Visible = (i == 1)
+        TabFrame.Parent = MainFrame
+
+        GUI.Elements[tabName] = {}
+        
+        -- Пример элемента
+        local TestButton = Instance.new("TextButton")
+        TestButton.Text = "Тестовая функция"
+        TestButton.Size = UDim2.new(0.9, 0, 0, 30)
+        TestButton.Position = UDim2.new(0.05, 0, 0.05, 0)
+        TestButton.Parent = TabFrame
+    end
 
     GUI.Main = MainFrame
-    print("Меню создано!")
     return ScreenGui
 end
 
-print("Инициализация функций... Шаг 3/5")
-local interface = CreateMovableMenu()
+-- Основные функции
+local function ESP()
+    -- Реализация ESP
+end
 
-UIS.InputBegan:Connect(function(input)
-    print("Нажата клавиша:", input.KeyCode)
-    if input.KeyCode == SETTINGS.MenuKey then
-        GUI.Main.Visible = not GUI.Main.Visible
-        print("Меню видимости:", GUI.Main.Visible)
-    end
-end)
+local function Aimbot()
+    -- Реализация аима
+end
 
-print("Запуск основного цикла... Шаг 4/5")
+-- Инициализация
 RS.Heartbeat:Connect(function()
     pcall(function()
-        -- Базовая функциональность
-        if LP.Character then
-            local humanoid = LP.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = SETTINGS.Features.Player.Speed
-            end
-        end
+        -- Основной цикл
     end)
 end)
 
-print("Скрипт успешно загружен! Шаг 5/5")
+UIS.InputBegan:Connect(function(input)
+    if input.KeyCode == CONFIG.MenuKey then
+        GUI.Main.Visible = not GUI.Main.Visible
+    end
+end)
+
+-- Запуск
+if identifyexecutor() == "Swift" then
+    CreateUI()
+    print("Delta Hub успешно загружен!")
+else
+    warn("Требуется Swift Executor!")
+end

@@ -22,7 +22,7 @@ local SETTINGS = {
     },
     Configs = {
         AutoSave = true,
-        FileName = "SwimHub_Config.json"
+        FileName = "SamboHub_Config.json"
     }
 }
 
@@ -52,9 +52,9 @@ local MENU_ITEMS = {
 }
 
 --= Modern GUI Library =--
-local function CreateSwimHubGUI()
+local function CreateSamboHubGUI()
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SwimHub_Main"
+    ScreenGui.Name = "SamboHub_Main"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = game:GetService("CoreGui")
 
@@ -143,4 +143,4 @@ RS.RenderStepped:Connect(function()
     -- Main Hack Loop
 end)
 
-print("sambo Hub Menu Activated! Press INSERT")
+print("Sambo Hub Menu Activated! Press INSERT")
